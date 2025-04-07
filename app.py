@@ -120,6 +120,7 @@ def main():
             border: 2px solid #4CAF50;
             width: 100%;
             margin: 0;
+            margin-top: 0px;  /* ลดระยะห่างด้านบนของ input */
         }
         .stButton > button {
             background-color: #FF4B4B;
@@ -163,7 +164,9 @@ def main():
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 0;
+            margin-bottom: -50px;
+            margin-top: -5px;
+            padding: 0;
         }
         .input-label {
             font-size: 16px;
