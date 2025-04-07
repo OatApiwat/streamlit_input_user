@@ -54,19 +54,16 @@ def add_or_update_data(data_1, data_2, data_3, data_4, data_5):
     conn = pymssql.connect(server=SERVER, user=USER, password=PASSWORD, database=DATABASE)
     cursor = conn.cursor()
     
-    # ตรวจสอบว่า data_1 มีอยู่ในฐานข้อมูลหรือไม่
     cursor.execute("SELECT COUNT(*) FROM user_data WHERE data_1 = %s", (data_1,))
     exists = cursor.fetchone()[0]
     
     if exists:
-        # ถ้ามีอยู่แล้ว อัปเดตข้อมูล
         cursor.execute("""
         UPDATE user_data 
         SET time = %s, shift = %s, data_2 = %s, data_3 = %s, data_4 = %s, data_5 = %s
         WHERE data_1 = %s
         """, (current_time, shift, data_2, data_3, data_4, data_5, data_1))
     else:
-        # ถ้ายังไม่มี เพิ่มข้อมูลใหม่
         cursor.execute("""
         INSERT INTO user_data (time, shift, data_1, data_2, data_3, data_4, data_5)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -87,13 +84,34 @@ def get_data():
     rows = cursor.fetchall()
     conn.close()
     return rows
-
+def update_form():
+    data_1 = st.session_state["data_1"]
+    data_2 = st.session_state["data_2"]
+    data_3 = st.session_state["data_3"]
+    data_4 = st.session_state["data_4"]
+    data_5 = st.session_state["data_5"]
+    if data_1 and data_2 and data_3 and data_4 and data_5:
+        add_or_update_data(data_1, data_2, data_3, data_4, data_5)
+        st.session_state["data_1"] = ""
+        st.session_state["data_2"] = ""
+        st.session_state["data_3"] = ""
+        st.session_state["data_4"] = ""
+        st.session_state["data_5"] = ""
+        # ล้าง input fields
+    else:
+        st.error("Please fill in all fields. ⚠️")
+def clear_form():
+    st.session_state["data_1"] = ""
+    st.session_state["data_2"] = ""
+    st.session_state["data_3"] = ""
+    st.session_state["data_4"] = ""
+    st.session_state["data_5"] = ""
+    
+    
 # ฟังก์ชันหลักสำหรับรัน Streamlit UI
 def main():
-    # ตั้งค่า Streamlit UI
     st.set_page_config(page_title="Program MC1", layout="wide")
 
-    # เพิ่ม CSS เพื่อปรับแต่ง UI ให้สวยงาม
     st.markdown("""
         <style>
         .stTextInput > div > input {
@@ -167,19 +185,15 @@ def main():
         </style>
     """, unsafe_allow_html=True)
 
-    # UI: หัวข้อ
     st.markdown('<div class="title">Program MC1</div>', unsafe_allow_html=True)
-
-    # สร้างตารางในฐานข้อมูล (ถ้ายังไม่มี)
     init_db()
 
-    # แบ่งเลย์เอาต์เป็น 2 คอลัมน์
     col1, col2 = st.columns([1, 1])
 
-    # คอลัมน์ซ้าย: ช่องกรอกข้อมูล
     with col1:
         st.markdown('<div class="subheader"><span class="icon">📝</span>Input Data</div>', unsafe_allow_html=True)
         with st.form(key="data_form"):
+            # แสดง input fields ใน containersVED
             st.markdown('<div class="input-container"><span class="icon">1️⃣</span><span class="input-label">data_1</span></div>', unsafe_allow_html=True)
             data_1 = st.text_input("Data 1", placeholder="Enter data_1", key="data_1", label_visibility="hidden")
             
@@ -195,30 +209,29 @@ def main():
             st.markdown('<div class="input-container"><span class="icon">5️⃣</span><span class="input-label">data_5</span></div>', unsafe_allow_html=True)
             data_5 = st.text_input("Data 5", placeholder="Enter data_5", key="data_5", label_visibility="hidden")
             
-            submit_button = st.form_submit_button(label="Submit  📤")
+            # สร้าง columns สำหรับปุ่ม Submit และ Clear
+            button_col1, button_col2 = st.columns(2)
+            with button_col1:
+                submit_button = st.form_submit_button(label="Submit  📤", on_click=update_form)
+            with button_col2:
+                clear_button = st.form_submit_button(label="Clear Data  🗑️")
 
-    # เมื่อกดปุ่ม Submit
-    if submit_button:
-        if data_1 and data_2 and data_3 and data_4 and data_5:
-            add_or_update_data(data_1, data_2, data_3, data_4, data_5)
+        # เมื่อกดปุ่ม Submit
+        if submit_button:
             st.success("Data processed successfully! ✅")
-        else:
-            st.error("Please fill in all fields. ⚠️")
 
-    # คอลัมน์ขวา: แสดงข้อมูล
+        # เมื่อกดปุ่ม Clear
+        if clear_button:
+            st.info("Input fields cleared! 🧹")
+
     with col2:
         st.markdown('<div class="subheader"><span class="icon">📊</span>Latest Data</div>', unsafe_allow_html=True)
         data = get_data()
         if data:
             df = pd.DataFrame(data, columns=["no", "time", "shift", "data_1", "data_2", "data_3", "data_4", "data_5"])
-            
-            # เพิ่ม dropdown สำหรับเลือก shift
             shift_option = st.selectbox("Select Shift", ["All", "A", "B", "C", "D"], index=0)
-            
-            # กรองข้อมูลตาม shift ที่เลือก
             if shift_option != "All":
                 df = df[df["shift"] == shift_option]
-            
             st.dataframe(df, use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
         else:
