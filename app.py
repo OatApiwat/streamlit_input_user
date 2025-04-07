@@ -103,7 +103,6 @@ def update_form():
         st.session_state["data_5"] = ""
     else:
         st.session_state["form_submitted"] = False
-        # ล้าง input fields
     
 def clear_form():
     st.session_state.status = False
