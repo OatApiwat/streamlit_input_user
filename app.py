@@ -79,15 +79,23 @@ def add_or_update_data(data_1, data_2, data_3, data_4, data_5):
               current_time, shift, data_1, data_2, data_3, data_4, data_5))
         conn.commit()
 
-# ฟังก์ชันดึงข้อมูลจากฐานข้อมูล
-def get_data(cache_buster):  # ลบ @st.cache_data เพื่อให้ข้อมูลอัปเดตทันที
+# ฟังก์ชันดึงข้อมูลจากฐานข้อมูล โดยกรองตาม shift_option
+def get_data(cache_buster, shift_option):
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("""
-            SELECT TOP 10 no, time, shift, data_1, data_2, data_3, data_4, data_5
-            FROM user_data
-            ORDER BY time DESC
-        """)
+        if shift_option == "All":
+            cursor.execute("""
+                SELECT TOP 10 no, time, shift, data_1, data_2, data_3, data_4, data_5
+                FROM user_data
+                ORDER BY time DESC
+            """)
+        else:
+            cursor.execute("""
+                SELECT TOP 10 no, time, shift, data_1, data_2, data_3, data_4, data_5
+                FROM user_data
+                WHERE shift = %s
+                ORDER BY time DESC
+            """, (shift_option,))
         rows = cursor.fetchall()
     return rows
 
@@ -201,14 +209,11 @@ def main():
     st.markdown('<div class="title">Program MC1</div>', unsafe_allow_html=True)
     init_db()
 
-    # ตั้งค่า cache_buster ถ้ายังไม่มี
+    # ตั้งค่า cache_buster และ form_submitted ถ้ายังไม่มี
     if "cache_buster" not in st.session_state:
         st.session_state["cache_buster"] = 0
     if "form_submitted" not in st.session_state:
         st.session_state["form_submitted"] = False
-
-    # ดึงข้อมูลล่าสุด
-    data = get_data(st.session_state["cache_buster"])
 
     col1, col2 = st.columns([1, 1])
 
@@ -220,7 +225,7 @@ def main():
             st.markdown('<div class="input-container"><span class="icon">2️⃣</span><span class="input-label">data_2</span></div>', unsafe_allow_html=True)
             st.text_input("Data 2", placeholder="Enter data_2", key="data_2", label_visibility="hidden")
             st.markdown('<div class="input-container"><span class="icon">3️⃣</span><span class="input-label">data_3</span></div>', unsafe_allow_html=True)
-            st.text_input("Data 3", placeholder="Enter data_3", key="data_3", label_visibility="hidden")
+            st.text_input("Data 3", placeholder="Enter Submit data_3", key="data_3", label_visibility="hidden")
             st.markdown('<div class="input-container"><span class="icon">4️⃣</span><span class="input-label">data_4</span></div>', unsafe_allow_html=True)
             st.text_input("Data 4", placeholder="Enter data_4", key="data_4", label_visibility="hidden")
             st.markdown('<div class="input-container"><span class="icon">5️⃣</span><span class="input-label">data_5</span></div>', unsafe_allow_html=True)
@@ -242,11 +247,10 @@ def main():
 
     with col2:
         st.markdown('<div class="subheader"><span class="icon">📊</span>Latest Data</div>', unsafe_allow_html=True)
+        shift_option = st.selectbox("Select Shift", ["All", "A", "B", "C", "D"], index=0, key="shift_select")
+        data = get_data(st.session_state["cache_buster"], shift_option)
         if data:
             df = pd.DataFrame(data, columns=["no", "time", "shift", "data_1", "data_2", "data_3", "data_4", "data_5"])
-            shift_option = st.selectbox("Select Shift", ["All", "A", "B", "C", "D"], index=0, key="shift_select")
-            if shift_option != "All":
-                df = df[df["shift"] == shift_option]
             st.dataframe(df, use_container_width=True)
         else:
             st.write("No data available yet. 📉")
