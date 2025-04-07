@@ -84,6 +84,7 @@ def get_data():
     rows = cursor.fetchall()
     conn.close()
     return rows
+
 def update_form():
     data_1 = st.session_state["data_1"]
     data_2 = st.session_state["data_2"]
@@ -98,8 +99,7 @@ def update_form():
         st.session_state["data_4"] = ""
         st.session_state["data_5"] = ""
         # ล้าง input fields
-    else:
-        st.error("Please fill in all fields. ⚠️")
+    
 def clear_form():
     st.session_state["data_1"] = ""
     st.session_state["data_2"] = ""
@@ -214,11 +214,14 @@ def main():
             with button_col1:
                 submit_button = st.form_submit_button(label="Submit  📤", on_click=update_form)
             with button_col2:
-                clear_button = st.form_submit_button(label="Clear Data  🗑️", on_click=update_form)
+                clear_button = st.form_submit_button(label="Clear Data  🗑️", on_click=clear_form)
 
         # เมื่อกดปุ่ม Submit
         if submit_button:
-            st.success("Data processed successfully! ✅")
+            if data_1 and data_2 and data_3 and data_4 and data_5:
+                st.success("Data processed successfully! ✅")
+            else:
+                st.error("Please fill in all fields. ⚠️")
 
         # เมื่อกดปุ่ม Clear
         if clear_button:
