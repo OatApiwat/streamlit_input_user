@@ -77,7 +77,7 @@ def get_data():
     conn = pymssql.connect(server=SERVER, user=USER, password=PASSWORD, database=DATABASE)
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT no, time, shift, data_1, data_2, data_3, data_4, data_5
+        SELECT TOP 10 no, time, shift, data_1, data_2, data_3, data_4, data_5
         FROM user_data
         ORDER BY time DESC
     """)
