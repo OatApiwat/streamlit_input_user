@@ -214,7 +214,7 @@ def main():
             with button_col1:
                 submit_button = st.form_submit_button(label="Submit  📤", on_click=update_form)
             with button_col2:
-                clear_button = st.form_submit_button(label="Clear Data  🗑️")
+                clear_button = st.form_submit_button(label="Clear Data  🗑️", on_click=update_form)
 
         # เมื่อกดปุ่ม Submit
         if submit_button:
