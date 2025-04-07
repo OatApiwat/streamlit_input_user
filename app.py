@@ -28,6 +28,7 @@ def get_shift(time):
     return "Unknown"
 
 # ฟังก์ชันเชื่อมต่อกับ SQL Server และสร้างตารางถ้ายังไม่มี
+@st.cache_resource
 def init_db():
     conn = pymssql.connect(server=SERVER, user=USER, password=PASSWORD, database=DATABASE)
     cursor = conn.cursor()
@@ -73,6 +74,7 @@ def add_or_update_data(data_1, data_2, data_3, data_4, data_5):
     conn.close()
 
 # ฟังก์ชันดึงข้อมูลจากฐานข้อมูล
+@st.cache_data(ttl=10)
 def get_data():
     conn = pymssql.connect(server=SERVER, user=USER, password=PASSWORD, database=DATABASE)
     cursor = conn.cursor()
@@ -93,14 +95,18 @@ def update_form():
     data_5 = st.session_state["data_5"]
     if data_1 and data_2 and data_3 and data_4 and data_5:
         add_or_update_data(data_1, data_2, data_3, data_4, data_5)
+        st.session_state["form_submitted"] = True
         st.session_state["data_1"] = ""
         st.session_state["data_2"] = ""
         st.session_state["data_3"] = ""
         st.session_state["data_4"] = ""
         st.session_state["data_5"] = ""
+    else:
+        st.session_state["form_submitted"] = False
         # ล้าง input fields
     
 def clear_form():
+    st.session_state.status = False
     st.session_state["data_1"] = ""
     st.session_state["data_2"] = ""
     st.session_state["data_3"] = ""
@@ -111,8 +117,10 @@ def clear_form():
 # ฟังก์ชันหลักสำหรับรัน Streamlit UI
 def main():
     st.set_page_config(page_title="Program MC1", layout="wide")
-
-    st.markdown("""
+    # CSS
+    @st.cache_resource
+    def get_css():
+        return """
         <style>
         .stTextInput > div > input {
             border-radius: 10px;
@@ -185,9 +193,8 @@ def main():
             border: 2px solid #4CAF50;
             width: 150px;
         }
-        </style>
-    """, unsafe_allow_html=True)
-
+        </style>"""
+    st.markdown(f"<style>{get_css()}</style>", unsafe_allow_html=True)
     st.markdown('<div class="title">Program MC1</div>', unsafe_allow_html=True)
     init_db()
 
@@ -198,19 +205,18 @@ def main():
         with st.form(key="data_form"):
             # แสดง input fields ใน containersVED
             st.markdown('<div class="input-container"><span class="icon">1️⃣</span><span class="input-label">data_1</span></div>', unsafe_allow_html=True)
-            data_1 = st.text_input("Data 1", placeholder="Enter data_1", key="data_1", label_visibility="hidden")
-            
+            data_10 = st.text_input("Data 1", placeholder="Enter data_1", key="data_1", label_visibility="hidden")
             st.markdown('<div class="input-container"><span class="icon">2️⃣</span><span class="input-label">data_2</span></div>', unsafe_allow_html=True)
-            data_2 = st.text_input("Data 2", placeholder="Enter data_2", key="data_2", label_visibility="hidden")
+            data_20 = st.text_input("Data 2", placeholder="Enter data_2", key="data_2", label_visibility="hidden")
             
             st.markdown('<div class="input-container"><span class="icon">3️⃣</span><span class="input-label">data_3</span></div>', unsafe_allow_html=True)
-            data_3 = st.text_input("Data 3", placeholder="Enter data_3", key="data_3", label_visibility="hidden")
+            data_30 = st.text_input("Data 3", placeholder="Enter data_3", key="data_3", label_visibility="hidden")
             
             st.markdown('<div class="input-container"><span class="icon">4️⃣</span><span class="input-label">data_4</span></div>', unsafe_allow_html=True)
-            data_4 = st.text_input("Data 4", placeholder="Enter data_4", key="data_4", label_visibility="hidden")
+            data_40 = st.text_input("Data 4", placeholder="Enter data_4", key="data_4", label_visibility="hidden")
             
             st.markdown('<div class="input-container"><span class="icon">5️⃣</span><span class="input-label">data_5</span></div>', unsafe_allow_html=True)
-            data_5 = st.text_input("Data 5", placeholder="Enter data_5", key="data_5", label_visibility="hidden")
+            data_50 = st.text_input("Data 5", placeholder="Enter data_5", key="data_5", label_visibility="hidden")
             
             # สร้าง columns สำหรับปุ่ม Submit และ Clear
             button_col1, button_col2 = st.columns(2)
@@ -221,7 +227,8 @@ def main():
 
         # เมื่อกดปุ่ม Submit
         if submit_button:
-            if data_1 and data_2 and data_3 and data_4 and data_5:
+            # if data_10 and data_20 and data_30 and data_40 and data_50:
+            if st.session_state["form_submitted"]:
                 st.success("Data processed successfully! ✅")
             else:
                 st.error("Please fill in all fields. ⚠️")
